@@ -118,8 +118,8 @@ turn it off**. Tape over it, connect a LiPo, or desolder its series resistor.
 
 Do all the steps on the VPS. Do not change the ESP32.
 
-If the client needs access only to the home network, and its profile has
-`AllowedIPs = 0.0.0.0/0`, no step is necessary. The client receives the route
+If the client needs access only to the home network, no step is necessary. Its
+profile must have `AllowedIPs = 0.0.0.0/0`. The client then receives the route
 automatically.
 
 If the client must also send its internet traffic through your home connection,
