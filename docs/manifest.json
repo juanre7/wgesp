@@ -1,0 +1,11 @@
+{
+  "name": "wgesp",
+  "version": "dev",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32-C6",
+      "parts": [{ "path": "wgesp.bin", "offset": 0 }]
+    }
+  ]
+}

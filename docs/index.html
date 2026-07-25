@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wgesp - flasher web</title>
+<meta name="description" content="Flashea un ESP32-C6 con wgesp desde el navegador. Sin instalar nada.">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #000;
+    --surface: #0A0A0A;
+    --surface-2: #101010;
+    --border: rgba(255,255,255,.10);
+    --border-hi: rgba(255,255,255,.18);
+    --text: #fff;
+    --dim: #8A8A8A;
+    --dimmer: #5C5C5C;
+    --cyan: #22D3EE;
+    --blue: #3B82F6;
+    --green: #00FF80;
+    --amber: #FFA500;
+    --radius: 12px;
+    --sans: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "Courier New", monospace;
+    color-scheme: dark;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { overflow-x: hidden; scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 400 16px/1.6 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  /* rejilla de puntos, decorativa, se desvanece hacia abajo */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: radial-gradient(rgba(255,255,255,.13) 1px, transparent 1px);
+    background-size: 26px 26px;
+    -webkit-mask-image: radial-gradient(120% 70% at 50% 0%, #000 10%, transparent 70%);
+    mask-image: radial-gradient(120% 70% at 50% 0%, #000 10%, transparent 70%);
+  }
+  .wrap { position: relative; z-index: 1; max-width: 52rem; margin: 0 auto; padding: 0 1.25rem; }
+  .mono { font-family: var(--mono); }
+  a { color: inherit; }
+
+  /* ---------- barra superior ---------- */
+  header { border-bottom: 1px solid var(--border); background: rgba(0,0,0,.6); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 10; }
+  .bar { display: flex; align-items: center; gap: .75rem; height: 48px; }
+  .logo { font-weight: 700; letter-spacing: -.02em; font-size: .9375rem; }
+  .logo::before {
+    content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 9px var(--green); margin-right: .5rem; vertical-align: middle;
+  }
+  .bar .chip {
+    font-family: var(--mono); font-size: .625rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--dim); border: 1px solid var(--border); border-radius: 99px; padding: .2rem .5rem;
+  }
+  .bar .spacer { flex: 1; }
+  .bar a.ghlink { color: var(--dim); font-size: .8125rem; text-decoration: none; transition: color .2s; }
+  .bar a.ghlink:hover { color: var(--text); }
+
+  /* ---------- hero ---------- */
+  .hero { padding: 2.25rem 0 1.25rem; text-align: center; }
+  .badge {
+    display: inline-flex; align-items: center; gap: .45rem;
+    font-family: var(--mono); font-size: .6875rem; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--dim); border: 1px solid var(--border); border-radius: 99px;
+    padding: .3rem .7rem; margin-bottom: 1rem; background: var(--surface);
+  }
+  .badge b { color: var(--green); font-weight: 500; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+  .lede { color: var(--dim); font-size: .9375rem; max-width: 32rem; margin: 0 auto; }
+
+  /* reparto equilibrado de lineas en textos cortos */
+  .lede, .card h2, .card p, .alert, .badge { text-wrap: balance; }
+
+  /* ---------- rail de pasos ---------- */
+  .rail {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: .4rem;
+    margin: 1.25rem 0 1rem;
+  }
+  .rail li {
+    list-style: none; display: flex; align-items: center; gap: .45rem;
+    border: 1px solid var(--border); border-radius: 99px; padding: .3rem .75rem .3rem .35rem;
+    background: var(--surface); font-size: .8125rem; color: var(--dim);
+  }
+  .rail li b {
+    font-family: var(--mono); font-size: .6875rem; font-weight: 500;
+    width: 19px; height: 19px; border-radius: 50%; display: grid; place-items: center;
+    background: rgba(255,255,255,.08); color: var(--text);
+  }
+  .rail li:first-child { border-color: var(--border-hi); color: var(--text); }
+  .rail li:first-child b { background: linear-gradient(135deg, var(--cyan), var(--blue)); color: #001018; }
+
+  /* ---------- panel de flasheo ---------- */
+  .panel {
+    background: linear-gradient(180deg, var(--surface-2), var(--surface));
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.5rem 1.25rem; text-align: center;
+    box-shadow: 0 20px 64px -40px rgba(34,211,238,.35);
+  }
+  .board { color: var(--dimmer); margin-bottom: .875rem; }
+  .board svg { width: 44px; height: 44px; }
+  esp-web-install-button { display: block; }
+  .cta {
+    display: inline-flex; align-items: center; justify-content: center; gap: .55rem;
+    cursor: pointer; min-height: 44px; padding: .7rem 1.4rem;
+    border: 0; border-radius: 9px;
+    background: linear-gradient(100deg, var(--cyan), var(--blue));
+    color: #001018; font: 500 .9375rem/1 var(--sans); letter-spacing: -.01em;
+    transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+  }
+  .cta:hover { filter: brightness(1.08); box-shadow: 0 10px 34px -10px rgba(59,130,246,.8); }
+  .cta:active { transform: scale(.98); }
+  .cta svg { width: 17px; height: 17px; flex: none; }
+  :focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 6px; }
+  .alert {
+    display: block; max-width: 30rem; margin: 0 auto;
+    color: var(--amber); font-size: .875rem;
+    border: 1px solid rgba(255,165,0,.28); background: rgba(255,165,0,.06);
+    border-radius: 8px; padding: .6rem .85rem;
+  }
+  .support {
+    margin-top: .75rem; font-family: var(--mono);
+    font-size: .6875rem; letter-spacing: .08em; text-transform: uppercase; color: var(--dimmer);
+  }
+
+  /* ---------- tarjetas ---------- */
+  .cards { display: grid; gap: .5rem; margin: .5rem 0 0; }
+  @media (min-width: 46rem) { .cards { grid-template-columns: repeat(3, 1fr); } }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: .95rem 1rem; text-align: left; transition: border-color .2s ease, background .2s ease;
+  }
+  .card:hover { border-color: var(--border-hi); background: var(--surface-2); }
+  .card .n {
+    font-family: var(--mono); font-size: .625rem; letter-spacing: .12em;
+    color: var(--cyan); display: block; margin-bottom: .4rem;
+  }
+  .card h2 { font-size: .875rem; font-weight: 500; letter-spacing: -.015em; margin-bottom: .3rem; }
+  .card p { color: var(--dim); font-size: .8125rem; line-height: 1.5; }
+  .card p + p { margin-top: .35rem; }
+  code {
+    font-family: var(--mono); font-size: .8125em;
+    background: rgba(255,255,255,.07); border-radius: 4px; padding: .1em .38em; word-break: break-word;
+  }
+
+  footer {
+    border-top: 1px solid var(--border); margin-top: 2rem;
+    padding: 1rem 0 2rem;
+    display: flex; flex-wrap: wrap; gap: .4rem 1.25rem; align-items: center;
+    color: var(--dimmer); font-size: .75rem;
+  }
+  footer a { color: var(--dim); text-decoration: none; transition: color .2s; }
+  footer a:hover { color: var(--text); }
+  footer .spacer { flex: 1; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } html { scroll-behavior: auto; } }
+</style>
+<script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+</head>
+<body>
+
+<header>
+  <div class="wrap bar">
+    <span class="logo">wgesp</span>
+    <span class="chip">ESP32-C6</span>
+    <span class="spacer"></span>
+    <a class="ghlink" href="https://github.com/juanre7/wgesp">GitHub</a>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero">
+    <span class="badge mono"><b>&#9679;</b> Web Serial &mdash; sin instalar nada</span>
+    <h1 class="sr-only">wgesp &mdash; flasher web para ESP32-C6</h1>
+    <p class="lede">Conecta el ESP32-C6 por USB y pulsa el boton. Ni toolchain, ni esptool, ni drivers.</p>
+
+    <ol class="rail">
+      <li><b>1</b> Conectar</li>
+      <li><b>2</b> Flashear</li>
+      <li><b>3</b> Configurar</li>
+    </ol>
+  </section>
+
+  <section class="panel">
+    <div class="board" aria-hidden="true">
+      <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="10" y="14" width="44" height="36" rx="3"/>
+        <rect x="24" y="25" width="16" height="14" rx="2"/>
+        <path d="M14 20h4M14 26h4M14 32h4M14 38h4M14 44h4M46 20h4M46 26h4M46 32h4M46 38h4M46 44h4"/>
+        <path d="M27 14v-4h10v4"/>
+      </svg>
+    </div>
+
+    <esp-web-install-button manifest="manifest.json">
+      <button class="cta" slot="activate">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3v11m0 0l-4-4m4 4l4-4M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/>
+        </svg>
+        Conectar y flashear
+      </button>
+      <span class="alert" slot="unsupported">Este navegador no soporta Web Serial. Abre la pagina en Chrome, Edge u Opera de escritorio.</span>
+      <span class="alert" slot="not-allowed">El flasheo necesita HTTPS.</span>
+    </esp-web-install-button>
+
+    <p class="support">Chrome &middot; Edge &middot; Opera &nbsp;&mdash;&nbsp; solo escritorio</p>
+  </section>
+
+  <section class="cards">
+    <article class="card">
+      <span class="n mono">01 / CONECTAR</span>
+      <h2>Sin drivers</h2>
+      <p>El C6 usa su USB nativo. Windows 10+, macOS y Linux lo reconocen solos.</p>
+      <p>En Linux tu usuario tiene que estar en <code>dialout</code> o el puerto no aparece.</p>
+    </article>
+    <article class="card">
+      <span class="n mono">02 / FLASHEAR</span>
+      <h2>Imagen completa</h2>
+      <p>Borra la flash y escribe bootloader, tabla de particiones y aplicacion.</p>
+      <p>Alrededor de un minuto. No desconectes el cable mientras avanza la barra.</p>
+    </article>
+    <article class="card">
+      <span class="n mono">03 / CONFIGURAR</span>
+      <h2>Claves y WiFi</h2>
+      <p>La placa arranca vacia. Vuelve a pulsar el boton y abre <strong>Logs &amp; Console</strong>.</p>
+      <p>Se guarda en NVS: sobrevive a un reinicio, no a un borrado de flash.</p>
+    </article>
+  </section>
+
+  <footer>
+    <span>wgesp &mdash; MIT</span>
+    <span class="spacer"></span>
+    <a href="https://github.com/juanre7/wgesp">Codigo</a>
+    <a href="https://github.com/juanre7/wgesp#readme">Documentacion</a>
+  </footer>
+
+</main>
+
+</body>
+</html>
