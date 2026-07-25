@@ -430,7 +430,7 @@ static esp_err_t dump(httpd_req_t *req)
 /* Does it come from the home LAN? It is compared against the real address and
  * netmask of the WiFi interface, not against a constant: if the home network
  * changes range tomorrow, this still holds. Only allowed when mDNS is
- * configured — with no name to resolve, the LAN door makes no sense and stays
+ * configured. With no name to resolve, the LAN door makes no sense and stays
  * shut. */
 static bool from_the_lan(uint32_t ip)
 {

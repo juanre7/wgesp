@@ -1,4 +1,4 @@
-# wgesp — an ESP32-C6 as the front door to your home network
+# wgesp: an ESP32-C6 as the front door to your home network
 
 An ESP32-C6 plugged into mains power and your home WiFi opens an **outbound**
 WireGuard tunnel to a VPS. From anywhere you connect to the VPS and reach your
@@ -26,7 +26,7 @@ Working and in daily use for months.
 | CPU at that throughput | 20-30 % |
 | Software crypto ceiling | 26 Mbit/s |
 
-The limit is the radio and the ISP, not the ESP32 — there is 3-5× of CPU to
+The limit is the radio and the ISP, not the ESP32. There is 3-5x of CPU to
 spare. Plenty for the router admin page, home automation, SSH, banking or modest
 video; not for large file transfers.
 
@@ -41,7 +41,7 @@ Yours will differ. `/dump` (below) measures your own.
 - **ESP-IDF 5.5** on the build machine.
 - **A VPS with a public IP and root access.** `vps/setup.sh` provisions one from
   scratch; if you already run WireGuard there, add the ESP as one more peer
-  instead — the script refuses to overwrite an existing server, on purpose.
+  instead. The script refuses to overwrite an existing server, on purpose.
 
 Start at `vps/README.md`: VPS, then DNS, then ESP32.
 
@@ -111,8 +111,8 @@ sessions and reports no connections, so this is as close to "client in/out" as
 anyone can get from here.
 
 The Beetle has a second LED, for the battery charger. The TP4057 drives it, not
-the ESP32, and it blinks forever when no battery is connected — **no firmware can
-turn it off**. Tape over it, connect a LiPo, or desolder its series resistor.
+the ESP32, and it blinks forever when no battery is connected. **No firmware can
+turn it off.** Tape over it, connect a LiPo, or desolder its series resistor.
 
 ## Procedure to add a client
 
@@ -173,7 +173,7 @@ CPU, chip temperature, heap, NAPT table occupancy, and the clients seen with how
 long they have been quiet.
 
 Read-only on purpose: no forms, no writes. And it only answers those who arrive
-through the tunnel — a request to the LAN address is refused when the connection
+through the tunnel: a request to the LAN address is refused when the connection
 is opened. Going through WireGuard **is** the authentication.
 
 `CONFIG_WGESP_MDNS` also publishes the page as `http://wgesp.local/` on the home
@@ -186,8 +186,8 @@ network can read the status page.**
 
 The device lives alone, plugged in, with nobody watching it:
 
-- It retries the WiFi connection forever (`CONFIG_EXAMPLE_WIFI_CONN_MAX_RETRY=-1`
-  — with `0` it gives up at the first drop, which is not what the name suggests).
+- It retries the WiFi connection forever (`CONFIG_EXAMPLE_WIFI_CONN_MAX_RETRY=-1`).
+  With `0` it gives up at the first drop, which is not what the name suggests.
 - It syncs the clock over SNTP before bringing the tunnel up, because WireGuard
   rejects handshakes with a skewed clock, and resyncs every hour.
 - If the tunnel stays down for 5 minutes it reboots itself
