@@ -1,0 +1,18 @@
+menu "WireGuard"
+
+    config WIREGUARD_MAX_PEERS
+        int "Maximum number of peers"
+        default 1
+        help
+            The ESP only talks to the VPS, so 1 is enough.
+
+    config WIREGUARD_MAX_SRC_IPS
+        int "Allowed IPs per peer"
+        default 6
+        help
+            Every AllowedIPs takes a slot. esp_wireguard_init() itself spends
+            one on the address of the ESP, so with the original value (1) the
+            tunnel network did not fit and esp_wireguard_add_allowed_ip()
+            failed.
+
+endmenu

@@ -1,0 +1,82 @@
+CONFIG_IDF_TARGET="esp32c6"
+
+# ponytail: the bridge is enabled purely as a lever, we do not use it. It is the
+# only way to set LWIP_ESP_NETIF_DATA=1 (see lwipopts.h), which makes esp_netif
+# keep its pointer in netif->client_data instead of netif->state. Without this,
+# the global esp_netif callback reads the state of the WireGuard interface (which
+# belongs to the WireGuard code) as if it were an esp_netif and the chip panics
+# when the tunnel is created.
+CONFIG_ESP_NETIF_BRIDGE_EN=y
+
+# VPN->LAN forwarding: the ESP masquerades tunnel traffic with its LAN address
+CONFIG_LWIP_IP_FORWARD=y
+CONFIG_LWIP_IPV4_NAPT=y
+# L2_TO_L3_COPY deliberately NOT set: it is needed in the ESP32 NAT routers
+# because they have their own access point; here we only route tunnel->WiFi and
+# all it would add is processing copies of somebody else's LAN broadcasts.
+
+# WiFi through protocol_examples_common; credentials in sdkconfig.local (not committed)
+CONFIG_EXAMPLE_CONNECT_WIFI=y
+# -1 = retry forever. With 0 the ESP gave up at the first WiFi drop and stayed
+# dead until unplugged (wifi_connect.c:35).
+CONFIG_EXAMPLE_WIFI_CONN_MAX_RETRY=-1
+# The binary used to build at -Og and filled 93.5 % of the partition. -Os is the
+# free lever: same features, 4 % less flash.
+CONFIG_COMPILER_OPTIMIZATION_SIZE=y
+
+# NAPT table occupancy for the status page. lwIP already counts it
+# (stats_ip_napt), you just have to let it turn the counter on.
+CONFIG_LWIP_STATS=y
+
+# Flash in QIO uses four lines instead of two. The code executes from flash
+# through the cache, so every cache miss is paid by the CPU waiting: this alone
+# took the cipher from 830 to 622 us per packet. If your module does not support
+# it, the chip will not boot and it is fixed by reflashing in DIO.
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+
+# lwIP hot path in IRAM, so it stops competing for the flash cache. It costs
+# internal RAM, of which there is plenty. Watch the heap: the NAPT table is the
+# first thing to notice.
+CONFIG_LWIP_IRAM_OPTIMIZATION=y
+
+# The Task WDT only printed. Make it reboot: the 5 min supervisor lives inside
+# what it supervises and is no use if the tcpip thread blocks.
+CONFIG_ESP_TASK_WDT_EN=y
+CONFIG_ESP_TASK_WDT_PANIC=y
+# And the RTC WDT stays alive after startup, armed and fed by the supervisor
+# (main.c): it is the only watchdog that does not depend on FreeRTOS.
+CONFIG_BOOTLOADER_WDT_DISABLE_IN_USER_CODE=y
+
+# The /dump bench gave 90 KB/s and it was not the chip: 5760 B of send buffer
+# over a 55 ms round trip is a 105 KB/s ceiling, pure window. This only affects
+# the ESP's own sockets (the status server), not forwarding, which does not go
+# through the local TCP stack. With 65534 the same bench gives 7.06 Mbit/s.
+# ponytail: 64 KB per socket that queues data. Only /dump queues that much, and
+# the server is single-task, so the real cost is bounded to one (the heap was
+# seen going from 232 to 158 KB during a dump and back on finishing).
+CONFIG_LWIP_TCP_SND_BUF_DEFAULT=65534
+
+CONFIG_MBEDTLS_CHACHA20_C=y
+CONFIG_MBEDTLS_POLY1305_C=y
+CONFIG_MBEDTLS_CHACHAPOLY_C=y
+
+# The C6 ships 802.15.4 enabled by default, and that turns on software
+# coexistence with WiFi (ESP_COEX_SW_COEXIST_ENABLE) on its own: arbitrating
+# every radio slot in software between two PHYs, one of which is unused here
+# (neither Thread nor Zigbee). Measured: it did not change throughput, but it
+# saves 6 KB of flash and this project uses neither.
+CONFIG_IEEE802154_ENABLED=n
+
+# The radio ran with an aggregation window of 6 while negotiating 32 with the
+# router, so each burst carried five times less than it could. These are the
+# values from the Espressif iperf example for the C6
+# (examples/wifi/iperf/sdkconfig.defaults.esp32c6), but with the RX buffers
+# trimmed: with the iperf ones (40/60) the all-time heap minimum under load fell
+# to 32 KB, too little for a device that lives on its own. The BA windows, which
+# are what give throughput, barely cost any RAM.
+CONFIG_ESP_WIFI_TX_BA_WIN=32
+CONFIG_ESP_WIFI_RX_BA_WIN=32
+CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=24
+CONFIG_ESP_WIFI_DYNAMIC_RX_BUFFER_NUM=48
+CONFIG_ESP_WIFI_DYNAMIC_TX_BUFFER_NUM=40
+CONFIG_LWIP_TCPIP_RECVMBOX_SIZE=64

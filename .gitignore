@@ -1,0 +1,18 @@
+build/
+managed_components/
+sdkconfig
+sdkconfig.old
+dependencies.lock
+*.log
+.vscode/
+__pycache__/
+
+# private keys: never in the repo
+*.key
+*.priv
+secrets/
+sdkconfig.local
+
+# personal working notes, not part of the tool
+PROGRESS.md
+FEEDBACK.md

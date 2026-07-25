@@ -1,0 +1,3 @@
+dependencies:
+  # So the status page answers at http://wgesp.local/ from the LAN.
+  espressif/mdns: "^1.4"

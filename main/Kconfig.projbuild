@@ -1,0 +1,128 @@
+menu "wgesp"
+
+    config WGESP_PRIVATE_KEY
+        string "WireGuard private key of the ESP (base64)"
+        default ""
+        help
+            Generated with `wg genkey`. Put it in sdkconfig.local, never in git.
+            Empty = WireGuard disabled (wifi+sntp only).
+
+    config WGESP_PEER_PUBLIC_KEY
+        string "Public key of the peer/VPS (base64)"
+        default ""
+
+    config WGESP_PRESHARED_KEY
+        string "Preshared key of the peer (base64, empty = no PSK)"
+        default ""
+
+    config WGESP_ENDPOINT
+        string "Peer endpoint (IP or hostname)"
+        default ""
+
+    config WGESP_MDNS
+        bool "Advertise the page over mDNS (http://wgesp.local/)"
+        default n
+        help
+            Off by default because IT COSTS 38 KB OF FLASH. With the 1 MB
+            partition of this project that is the difference between 10 % and
+            6 % free, so if you are tight --- or if some day you want OTA,
+            which needs two partitions --- this is the first thing to turn off.
+            Turning it off gives the 38 KB back in full: the component is left
+            without references and the linker drops it.
+
+            Besides the convenience, it changes who may look: see the help of
+            WGESP_MDNS_HOSTNAME.
+
+    config WGESP_MDNS_HOSTNAME
+        string "mDNS name of the status page"
+        depends on WGESP_MDNS
+        default "wgesp"
+        help
+            With "wgesp" the page answers at http://wgesp.local/ from the home
+            network, without having to remember the IP address.
+
+            CAREFUL: this opens the page to anyone on your WiFi, because mDNS
+            only works on the LAN and there would be no point in resolving the
+            name just to refuse the connection afterwards. The page is
+            read-only, but it shows IP addresses, client names and tunnel
+            state. With WGESP_MDNS off it is reachable through the tunnel only,
+            as before.
+
+            From outside (a phone on the tunnel) you still have to use the IP:
+            mDNS does not cross routers, let alone a tunnel.
+
+    config WGESP_CLIENT_NAMES
+        string "Names of the tunnel clients"
+        default ""
+        help
+            So the status page says "phone" and not just "10.66.66.10". The ESP
+            cannot work it out on its own: clients are WireGuard peers, not LAN
+            machines, so there is no DHCP and no hostname to look at. The names
+            live in the wg0.conf on the VPS.
+
+            Format: last octet=name, comma separated. Example:
+
+                10=phone,11=laptop,3=rasp
+
+            Put it in sdkconfig.local if you would rather not publish what your
+            gadgets are called. Empty = IP addresses only, as before.
+
+    config WGESP_ENDPOINT_PORT
+        int "UDP port of the endpoint"
+        default 51820
+
+    config WGESP_ADDRESS
+        string "Address of the ESP on the WireGuard network"
+        default "10.66.66.6"
+
+    config WGESP_NETMASK
+        string "Netmask of the WireGuard network"
+        default "255.255.255.0"
+
+    config WGESP_ALLOWED_IP
+        string "Network allowed through the tunnel"
+        default "10.66.66.0"
+
+    config WGESP_ALLOWED_IP_MASK
+        string "Netmask of the allowed network"
+        default "255.255.255.0"
+
+    config WGESP_LAN_IP
+        string "Home network we give access to"
+        default "192.168.1.0"
+        help
+            It has to be declared as allowed: on receive, the library compares
+            the packet DESTINATION against this list (wireguardif.c:337), so
+            without it everything addressed to the LAN is dropped and never
+            reaches forwarding.
+
+    config WGESP_LAN_MASK
+        string "Netmask of the home network"
+        default "255.255.255.0"
+
+    config WGESP_CRYPTO_BENCH
+        bool "Measure the cipher at boot (bench)"
+        default n
+        help
+            Compares the reference implementation against mbedTLS and libsodium
+            and prints to the serial port. Only for deciding optimisations, not
+            for production.
+
+    config WGESP_RESTART_AFTER_MIN
+        int "Reboot if the tunnel has been down N minutes (0 = never)"
+        default 5
+        help
+            Safety net for a device with no keyboard and no screen: if the peer
+            is still down after this long, something is stuck (WiFi with a new
+            IP, endpoint DNS changed, lwIP blocked) and rebooting is the most
+            reliable way out. A full boot takes ~20 s.
+
+    config WGESP_EXIT_NODE
+        bool "Exit node: forward any destination, not just the LAN"
+        default y
+        help
+            Adds 0.0.0.0/0 to the allowed networks so the ESP also accepts and
+            forwards internet traffic: clients go out with the home public IP
+            address.
+
+endmenu
