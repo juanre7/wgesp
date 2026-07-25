@@ -1,11 +1,9 @@
-# wgesp — an ESP32-C6 gateway to your home network
+# wgesp — an ESP32-C6 as the front door to your home network
 
-The ESP32-C6 connects to mains power and to the home WiFi network. It starts an
-outbound WireGuard tunnel to a VPS. You connect to the VPS from any location and
-you get access to the home network. You can also send your internet traffic
-through the home connection.
-
-The router does not need port forwarding.
+An ESP32-C6 plugged into mains power and your home WiFi opens an **outbound**
+WireGuard tunnel to a VPS. From anywhere you connect to the VPS and reach your
+home network; if you want, you can also browse the internet with your home public
+IP address. **No port forwarding on the router, ever.**
 
 ```
 phone / laptop ──► VPS (vpn.example.com) ──► ESP32-C6 ──► home network
@@ -13,45 +11,39 @@ phone / laptop ──► VPS (vpn.example.com) ──► ESP32-C6 ──► home
                                             (WiFi 192.168.1.50)
 ```
 
-The ESP32 always starts the connection. It keeps the connection open with a
-keepalive interval of 25 seconds. Thus the router does not need configuration.
-The system operates through CGNAT and through a router that you cannot control.
+The ESP always initiates the connection and keeps it alive with a 25 s keepalive,
+so the home router needs no configuration at all. That is the whole point: it
+works behind CGNAT, behind a landlord's router, behind anything that will not let
+you open a port.
 
 ## Status
 
-The system operates correctly in daily use.
+Working and in daily use for months.
 
-| Data | Value |
+| | |
 |---|---|
-| Throughput, download | 5.4 Mbit/s |
-| Throughput, upload | 4.6 Mbit/s |
-| CPU load at that throughput | 20 % to 30 % |
-| Maximum encryption rate | 26 Mbit/s |
+| Throughput, download / upload | **5.4 / 4.6 Mbit/s** |
+| CPU at that throughput | 20-30 % |
+| Software crypto ceiling | 26 Mbit/s |
 
-The radio and the internet connection cause the limit. The ESP32 does not cause
-it. The throughput is sufficient for the router web page, home automation, SSH,
-bank applications and video with low quality. The throughput is not sufficient
-for large files.
+The limit is the radio and the ISP, not the ESP32 — there is 3-5× of CPU to
+spare. Plenty for the router admin page, home automation, SSH, banking or modest
+video; not for large file transfers.
 
-These values are for one house, one internet connection and a signal level of
--73 dBm. Your values will be different. Use the `/dump` function to measure your
-system.
+Those numbers come from one house, one ISP and a board sitting at RSSI -73 dBm.
+Yours will differ. `/dump` (below) measures your own.
 
-## Necessary equipment
+## What you need
 
-- An ESP32-C6 board with a minimum of 2 MB of flash memory. The development
-  board was a DFRobot Beetle ESP32-C6 (DFR1117,
-  [data](https://wiki.dfrobot.com/dfr1117)). Only the LED pin is applicable to
-  this board.
-- ESP-IDF 5.5 on the computer that makes the build.
-- A VPS with a public IP address and root access.
+- **An ESP32-C6 board with 2 MB of flash or more.** Developed on a DFRobot Beetle
+  ESP32-C6 (DFR1117, [wiki](https://wiki.dfrobot.com/dfr1117)), ESP32-C6FH4 at
+  160 MHz. Nothing in the firmware is specific to it except the LED pin.
+- **ESP-IDF 5.5** on the build machine.
+- **A VPS with a public IP and root access.** `vps/setup.sh` provisions one from
+  scratch; if you already run WireGuard there, add the ESP as one more peer
+  instead — the script refuses to overwrite an existing server, on purpose.
 
-The script `vps/setup.sh` prepares a new VPS. If the VPS already has WireGuard,
-do not use this script. Add the ESP32 as an additional peer. Refer to
-`vps/README.md`.
-
-Do the procedure in `vps/README.md` first: the VPS, then the DNS record, then the
-ESP32.
+Start at `vps/README.md`: VPS, then DNS, then ESP32.
 
 ## Build and flash procedure
 
@@ -73,21 +65,16 @@ ESP32.
    idf.py -p /dev/ttyACM0 flash monitor
    ```
 
-The script `scripts/build.sh` does the same build. It also reads
-`sdkconfig.local`.
-
 The console must show `NAPT active` and subsequently `peer UP`.
+
+The script `scripts/build.sh` makes the same build. It also reads
+`sdkconfig.local`.
 
 ### Configuration
 
-Put your configuration in the file `sdkconfig.local`. This file is in the root
-directory of the repository. The file `.gitignore` contains its name. The file
-contains the WiFi credentials and the WireGuard keys.
-
-WARNING: Do not put the keys in git. Persons who read the repository can then
-get access to your network.
-
-The script `vps/setup.sh` prints these lines:
+Put your configuration in the file `sdkconfig.local`, in the root directory of
+the repository. The file `.gitignore` contains its name. The file holds the WiFi
+credentials and the WireGuard keys. The script `vps/setup.sh` prints the lines:
 
 ```
 CONFIG_EXAMPLE_WIFI_SSID="..."
@@ -98,19 +85,20 @@ CONFIG_WGESP_ENDPOINT="vpn.example.com"
 CONFIG_WGESP_LAN_IP="192.168.1.0"
 ```
 
-The other parameters are in `menuconfig`, in the menu **wgesp**. If the private
-key is empty, the firmware starts only the WiFi connection and the clock. This
-is a good first test.
+**WARNING: Do not put the keys in git.** Persons who read the repository can then
+get access to your network.
 
-CAUTION: The build reads `sdkconfig.local` only when it makes the file
-`sdkconfig`. If you change `sdkconfig.local`, delete `sdkconfig` and make the
+**CAUTION: The build reads `sdkconfig.local` only when it makes the file
+`sdkconfig`.** If you change `sdkconfig.local`, delete `sdkconfig` and make the
 build again. If you do not delete `sdkconfig`, the board gets firmware without
 your change.
 
-## The board and the LED
+The other parameters are in `menuconfig`, under **wgesp**. With no private key
+the firmware boots into WiFi + SNTP only, which is a useful first check.
 
-The firmware controls the LED on pin IO15/D13. The parameter `LED_GPIO` in
-`main/main.c` sets this pin. The LED gives this data:
+## The board and its LED
+
+The firmware drives one LED, on pin IO15/D13 (`LED_GPIO` in `main/main.c`):
 
 | Signal | Condition |
 |---|---|
@@ -118,29 +106,24 @@ The firmware controls the LED on pin IO15/D13. The parameter `LED_GPIO` in
 | 2 short flashes | The tunnel becomes operational. |
 | 1 flash of 1 second | A client starts to send data, or a client is silent for 60 seconds. |
 
-The parameter `CLIENTS_IDLE_US` in `main/clients.h` sets the silent time.
-WireGuard does not give data about connections. Thus this is the best available
-indication.
+`CLIENTS_IDLE_US` in `main/clients.h` sets the silent time. WireGuard has no
+sessions and reports no connections, so this is as close to "client in/out" as
+anyone can get from here.
 
-The Beetle board has a second LED for the battery charger. The TP4057 device
-controls this LED, not the ESP32. The LED flashes continuously when no battery
-is connected. No firmware can stop this LED. To stop the light, do one of these
-steps:
-
-- Put tape on the LED.
-- Connect a battery.
-- Remove the resistor of the LED from the board.
+The Beetle has a second LED, for the battery charger. The TP4057 drives it, not
+the ESP32, and it blinks forever when no battery is connected — **no firmware can
+turn it off**. Tape over it, connect a LiPo, or desolder its series resistor.
 
 ## Procedure to add a client
 
 Do all the steps on the VPS. Do not change the ESP32.
 
-If the client must have access only to the home network, and its profile has
+If the client needs access only to the home network, and its profile has
 `AllowedIPs = 0.0.0.0/0`, no step is necessary. The client receives the route
 automatically.
 
-If the client must also send internet traffic through the home connection, do
-these steps:
+If the client must also send its internet traffic through your home connection,
+do these steps:
 
 1. Copy the script to the VPS:
 
@@ -154,115 +137,114 @@ these steps:
    ssh root@vpn.example.com 'CLIENT=tablet CLIENT_IP=10.66.66.12 bash enable_home_exit.sh'
    ```
 
-The script does not change the keys of the other clients. It does not stop the
-interface. You can start it again safely. The script prints the profile of the
-new client. To show the profile as a QR code, use this command:
+3. Start the MTU script on the VPS:
+
+   ```bash
+   ssh root@vpn.example.com 'bash fix_mtu.sh'
+   ```
+
+**CAUTION: Do not omit step 3.** The script sets the MTU for each route and
+adjusts the TCP MSS in the two directions. If you do not start it, the tunnel
+discards large packets and the throughput becomes very low.
+
+The script of step 2 does not change the keys of the other clients and does not
+stop the interface. You can start it again safely. It prints the profile of the
+new client. To show that profile as a QR code, use this command:
 
 ```bash
 ssh root@vpn.example.com 'qrencode -t ansiutf8 < /etc/wireguard/wgesp/tablet.conf'
 ```
 
-The addresses have this sequence: `.1` for the VPS, `.6` for the ESP32, and
-`.10` and subsequent addresses for the clients that use the home connection.
-
-CAUTION: Start the script `vps/fix_mtu.sh` on the VPS after you add these
-clients. The script sets the MTU for each route and adjusts the TCP MSS in the
-two directions. If you do not start it, the tunnel discards large packets and
-the throughput becomes very low.
+Address allocation: `.1` VPS, `.6` ESP32, `.10` onwards for clients that exit
+through home.
 
 ## Status page
 
-You can read the status page from a location in the tunnel:
+From anywhere already inside the tunnel:
 
 | Address | Function |
 |---|---|
 | `http://10.66.66.6/` | The status page |
-| `http://10.66.66.6/txt` | The same data as plain text, for scripts |
-| `http://10.66.66.6/dump?mb=50` | 50 MB of test data, to measure the throughput |
+| `http://10.66.66.6/txt` | The same data as plain text, for curl and scripts |
+| `http://10.66.66.6/dump?mb=50` | 50 MB of test data, to measure your throughput |
 
-The page shows this data:
+It shows uptime, the boot count and the reason for the last reboot, peer state,
+CPU, chip temperature, heap, NAPT table occupancy, and the clients seen with how
+long they have been quiet.
 
-- The time from the last start.
-- The number of starts and the cause of the last start.
-- The condition of the peer.
-- The CPU load and the temperature of the chip.
-- The free memory and the quantity of NAPT entries.
-- The clients that send data through the tunnel.
+Read-only on purpose: no forms, no writes. And it only answers those who arrive
+through the tunnel — a request to the LAN address is refused when the connection
+is opened. Going through WireGuard **is** the authentication.
 
-The page has no forms and does not write data. The firmware refuses all
-connections from outside the tunnel. WireGuard gives the necessary
-authentication.
+`CONFIG_WGESP_MDNS` also publishes the page as `http://wgesp.local/` on the home
+LAN. It is off by default, because it costs 38 KB of flash.
 
-The parameter `CONFIG_WGESP_MDNS` also gives the page the name
-`http://wgesp.local/` on the home network. The default condition is off, because
-this function uses 38 KB of flash memory.
+**WARNING: If you set `CONFIG_WGESP_MDNS` to on, every person on your WiFi
+network can read the status page.**
 
-WARNING: If you set `CONFIG_WGESP_MDNS` to on, all persons on your WiFi network
-can read the status page.
+## How it looks after itself
 
-## Automatic recovery functions
+The device lives alone, plugged in, with nobody watching it:
 
-- The firmware tries to connect to the WiFi network without a limit. The
-  parameter is `CONFIG_EXAMPLE_WIFI_CONN_MAX_RETRY=-1`.
-- The firmware sets the clock with SNTP before it starts the tunnel, because
-  WireGuard refuses a handshake when the clock is not correct. It sets the clock
-  again each hour.
-- If the tunnel is not operational for 5 minutes, the firmware starts the chip
-  again. The parameter is `CONFIG_WGESP_RESTART_AFTER_MIN`. A full start takes
-  approximately 20 seconds.
-- The RTC watchdog starts the chip again when the CPU stops. This watchdog uses
-  the always-on power domain and its own clock. The test procedure stopped the
-  related task on purpose.
-- When the NAPT table is full, lwIP removes the oldest entry and sends a TCP
-  reset. The firmware writes a message to the log when it removes entries, or
-  when the table is more than 75 % full.
+- It retries the WiFi connection forever (`CONFIG_EXAMPLE_WIFI_CONN_MAX_RETRY=-1`
+  — with `0` it gives up at the first drop, which is not what the name suggests).
+- It syncs the clock over SNTP before bringing the tunnel up, because WireGuard
+  rejects handshakes with a skewed clock, and resyncs every hour.
+- If the tunnel stays down for 5 minutes it reboots itself
+  (`CONFIG_WGESP_RESTART_AFTER_MIN`). This is the safety net for the jams nobody
+  can anticipate. A full boot takes about 20 s.
+- An **RTC watchdog** reboots the chip even when the whole CPU is stuck. It runs
+  in the always-on power domain, on its own clock, so it does not depend on
+  FreeRTOS. Tested by deliberately freezing the task that feeds it.
+- When the **NAPT table** fills up, lwIP evicts the oldest entry and sends a TCP
+  reset instead of hanging. The firmware logs a warning when eviction starts, or
+  when the table goes over 75 %.
 
-## Security
+## Security, and its limits
 
-Only persons in the tunnel can read the status page, and the page does not write
-data. The keys are in the file `sdkconfig.local`, which is not in git.
+Whoever reaches the status page has already been through WireGuard, and the page
+writes nothing. The keys live in `sdkconfig.local`, outside git.
 
-WARNING: The flash memory is not encrypted. A person with physical access to the
-board can read the memory and get the private key and the pre-shared key.
+**WARNING: The flash memory is not encrypted.** A person with physical access to
+the board can read the memory and get the private key and the pre-shared key.
 
-That person can then operate a device that the VPS accepts as this ESP32. But
-that person cannot read the data of the other clients. WireGuard makes new
-session keys at each handshake. It also identifies each peer by its public key.
+That person can then run a device the VPS accepts as this ESP32. They cannot read
+anybody else's traffic: WireGuard derives new session keys at every handshake and
+authenticates each peer by public key. If a board is lost, delete its peer from
+`wg0.conf` on the VPS and the stolen keys are worth nothing.
 
-If you lose a board, remove its peer from the file `wg0.conf` on the VPS. The
-keys of that board then have no value.
+Flash encryption in Release mode closes that hole, but it also switches the ROM
+into Secure Download Mode. From then on OTA is the only way to update the
+firmware, and two OTA partitions do not fit comfortably in 2 MB. On a board with
+4 MB or more, do these steps in this sequence:
 
-Flash encryption in release mode prevents this condition. But release mode also
-sets the ROM to secure download mode. Subsequently, OTA is the only method to
-update the firmware, and two OTA partitions are too large for 2 MB of flash
-memory. On a board with a minimum of 4 MB, do these steps in this sequence:
-
-1. Make OTA operational and do a test.
-2. Add the secure boot signature.
+1. Make OTA operational and test it.
+2. Add the Secure Boot signature.
 3. Set the log level to zero.
 4. Disable the USB-JTAG interface with an eFuse.
-5. Set flash encryption to release mode.
+5. Set flash encryption to Release mode.
 
-WARNING: The eFuses are permanent. You cannot remove them. Step 5 prevents all
-subsequent use of the USB interface to write the firmware.
+**WARNING: The eFuses are permanent and you cannot remove them.** Step 5 prevents
+all subsequent use of the USB interface to write the firmware.
 
-## Contents of the repository
+## Repo layout
 
-| Path | Contents |
+| Path | What it is |
 |---|---|
-| `main/` | The application: WiFi, SNTP, tunnel, NAPT and the automatic start function |
-| `main/status.c` | The status page, the CPU meter and the throughput test |
-| `main/crypto_bench.c` | The encryption test in the chip (`CONFIG_WGESP_CRYPTO_BENCH`) |
-| `components/wireguard/` | droscy/esp_wireguard, with local changes (refer to `ORIGIN.md`) |
-| `vps/` | Scripts for the VPS: preparation, clients, MTU and MSS |
-| `scripts/` | Scripts to build, to flash and to monitor without an operator |
+| `main/` | The application: WiFi, SNTP, tunnel, NAPT and the safety reboot |
+| `main/status.c` | The status page, the CPU meter and the `/dump` bench |
+| `main/crypto_bench.c` | On-chip cipher bench (`CONFIG_WGESP_CRYPTO_BENCH`) |
+| `components/wireguard/` | droscy/esp_wireguard, vendored (see `ORIGIN.md`) |
+| `vps/` | Server provisioning, client enrolment, MTU and MSS fixes |
+| `scripts/` | Build, flash and monitor without interaction, agent-friendly |
 
 ## License
 
-MIT. Refer to the file `LICENSE`. The directory `components/wireguard/` contains
-software from a different source with a BSD-3 license. The file
-`components/wireguard/ORIGIN.md` gives data about the two local changes.
+MIT (`LICENSE`). `components/wireguard/` is vendored third-party code and keeps
+its own BSD-3 license; the two local patches are documented in
+`components/wireguard/ORIGIN.md`.
 
 ---
 
-This document uses ASD-STE100 Simplified Technical English.
+The procedures and the warnings in this document use ASD-STE100 Simplified
+Technical English. The rest is ordinary prose.
