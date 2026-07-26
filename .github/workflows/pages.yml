@@ -48,14 +48,19 @@ jobs:
           set -o pipefail
           fallo=0
 
-          # 1. la configuracion efectiva: cubre cualquier valor, tambien el WiFi
-          for sym in WGESP_PRIVATE_KEY WGESP_PRESHARED_KEY EXAMPLE_WIFI_SSID EXAMPLE_WIFI_PASSWORD; do
-            valor=$(sed -n "s/^CONFIG_${sym}=\"\(.*\)\"$/\1/p" sdkconfig)
-            if [ -n "$valor" ]; then
-              echo "::error::CONFIG_${sym} no esta vacio: la imagen publica llevaria credenciales"
+          # 1. la configuracion efectiva: cubre cualquier valor, tambien el WiFi.
+          #    Segundo argumento: el placeholder de Kconfig que si es aceptable.
+          revisar() {
+            valor=$(sed -n "s/^CONFIG_${1}=\"\(.*\)\"$/\1/p" sdkconfig)
+            if [ -n "$valor" ] && [ "$valor" != "${2-}" ]; then
+              echo "::error::CONFIG_${1} lleva un valor real: la imagen publica llevaria credenciales"
               fallo=1
             fi
-          done
+          }
+          revisar WGESP_PRIVATE_KEY
+          revisar WGESP_PRESHARED_KEY
+          revisar EXAMPLE_WIFI_SSID     myssid
+          revisar EXAMPLE_WIFI_PASSWORD mypassword
 
           # 2. red de seguridad sobre el binario: nada con forma de clave WG
           if strings -n 44 docs/wgesp.bin | grep -qE '[A-Za-z0-9+/]{43}='; then
