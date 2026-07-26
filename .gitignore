@@ -16,3 +16,4 @@ sdkconfig.local
 # personal working notes, not part of the tool
 PROGRESS.md
 FEEDBACK.md
+docs/wgesp.bin

@@ -1,0 +1,53 @@
+name: flasher
+
+# Compila el firmware y publica docs/ con el binario recien generado.
+# El .bin no vive en el repo: se construye aqui en cada push a main.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: espressif/idf:release-v5.5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compilar y fusionar
+        shell: bash
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          . "$IDF_PATH/export.sh"
+          idf.py build
+          idf.py merge-bin -o docs/wgesp.bin
+
+      - name: Comprobar la imagen
+        shell: bash
+        run: |
+          # cabecera de imagen ESP y un tamano que descarte un merge vacio
+          head -c1 docs/wgesp.bin | od -An -tx1 | grep -q e9
+          [ "$(stat -c%s docs/wgesp.bin)" -gt 500000 ]
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
