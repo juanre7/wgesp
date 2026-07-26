@@ -29,7 +29,8 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           . "$IDF_PATH/export.sh"
           idf.py build
-          idf.py merge-bin -o docs/wgesp.bin
+          # ruta absoluta: merge-bin lanza esptool desde build/
+          idf.py merge-bin -o "$GITHUB_WORKSPACE/docs/wgesp.bin"
 
       - name: Comprobar la imagen
         shell: bash
