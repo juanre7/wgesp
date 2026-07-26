@@ -39,6 +39,33 @@ jobs:
           head -c1 docs/wgesp.bin | od -An -tx1 | grep -q e9
           [ "$(stat -c%s docs/wgesp.bin)" -gt 500000 ]
 
+      - name: Que la imagen publica no lleve credenciales
+        shell: bash
+        run: |
+          # El firmware compila las credenciales dentro del binario. Una build
+          # con sdkconfig.local se publicaria con la clave privada de WireGuard
+          # y la contrasena del WiFi legibles con 'strings'. Ya paso una vez.
+          set -o pipefail
+          fallo=0
+
+          # 1. la configuracion efectiva: cubre cualquier valor, tambien el WiFi
+          for sym in WGESP_PRIVATE_KEY WGESP_PRESHARED_KEY EXAMPLE_WIFI_SSID EXAMPLE_WIFI_PASSWORD; do
+            valor=$(sed -n "s/^CONFIG_${sym}=\"\(.*\)\"$/\1/p" sdkconfig)
+            if [ -n "$valor" ]; then
+              echo "::error::CONFIG_${sym} no esta vacio: la imagen publica llevaria credenciales"
+              fallo=1
+            fi
+          done
+
+          # 2. red de seguridad sobre el binario: nada con forma de clave WG
+          if strings -n 44 docs/wgesp.bin | grep -qE '[A-Za-z0-9+/]{43}='; then
+            echo "::error::el binario contiene una cadena con forma de clave WireGuard"
+            fallo=1
+          fi
+
+          [ "$fallo" = 0 ] || exit 1
+          echo "Imagen limpia."
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs
