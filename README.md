@@ -1,4 +1,4 @@
-# wgesp: an ESP32-C6 as the front door to your home network
+# wgesp: The smallest ESP32 Wireguard server
 
 An ESP32-C6 plugged into mains power and your home WiFi opens an **outbound**
 WireGuard tunnel to a VPS. From anywhere you connect to the VPS and reach your
