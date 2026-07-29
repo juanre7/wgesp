@@ -1,4 +1,12 @@
+<div align="center">
+
 # wgesp: The smallest ESP32 Wireguard server
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+![ESP-IDF](https://img.shields.io/badge/ESP--IDF-5.5-red.svg)
+![Architecture](https://img.shields.io/badge/Architecture-ESP32--C6-green.svg)
+
+</div>
 
 An ESP32-C6 plugged into mains power and your home WiFi opens an **outbound**
 WireGuard tunnel to a VPS. From anywhere you connect to the VPS and reach your
@@ -16,7 +24,7 @@ so the home router needs no configuration at all. That is the whole point: it
 works behind CGNAT, behind a landlord's router, behind anything that will not let
 you open a port.
 
-## Status
+## 🚀 Status
 
 Working and in daily use for months.
 
@@ -33,7 +41,7 @@ video; not for large file transfers.
 Those numbers come from one house, one ISP and a board sitting at RSSI -73 dBm.
 Yours will differ. `/dump` (below) measures your own.
 
-## What you need
+## 🛠️ What you need
 
 - **An ESP32-C6 board with 2 MB of flash or more.** Developed on a DFRobot Beetle
   ESP32-C6 (DFR1117, [wiki](https://wiki.dfrobot.com/dfr1117)), ESP32-C6FH4 at
@@ -45,7 +53,7 @@ Yours will differ. `/dump` (below) measures your own.
 
 Start at `vps/README.md`: VPS, then DNS, then ESP32.
 
-## Build and flash procedure
+## 📖 Build and flash procedure
 
 1. Set the target:
 
@@ -96,7 +104,7 @@ your change.
 The other parameters are in `menuconfig`, under **wgesp**. With no private key
 the firmware boots into WiFi + SNTP only, which is a useful first check.
 
-## The board and its LED
+## 💡 The board and its LED
 
 The firmware drives one LED, on pin IO15/D13 (`LED_GPIO` in `main/main.c`):
 
@@ -114,7 +122,7 @@ The Beetle has a second LED, for the battery charger. The TP4057 drives it, not
 the ESP32, and it blinks forever when no battery is connected. **No firmware can
 turn it off.** Tape over it, connect a LiPo, or desolder its series resistor.
 
-## Procedure to add a client
+## 👥 Procedure to add a client
 
 Do all the steps on the VPS. Do not change the ESP32.
 
@@ -158,7 +166,7 @@ ssh root@vpn.example.com 'qrencode -t ansiutf8 < /etc/wireguard/wgesp/tablet.con
 Address allocation: `.1` VPS, `.6` ESP32, `.10` onwards for clients that exit
 through home.
 
-## Status page
+## 📊 Status page
 
 From anywhere already inside the tunnel:
 
@@ -182,7 +190,7 @@ LAN. It is off by default, because it costs 38 KB of flash.
 **WARNING: If you set `CONFIG_WGESP_MDNS` to on, every person on your WiFi
 network can read the status page.**
 
-## How it looks after itself
+## 🤖 How it looks after itself
 
 The device lives alone, plugged in, with nobody watching it:
 
@@ -200,7 +208,7 @@ The device lives alone, plugged in, with nobody watching it:
   reset instead of hanging. The firmware logs a warning when eviction starts, or
   when the table goes over 75 %.
 
-## Security, and its limits
+## 🔒 Security, and its limits
 
 Whoever reaches the status page has already been through WireGuard, and the page
 writes nothing. The keys live in `sdkconfig.local`, outside git.
@@ -227,7 +235,7 @@ firmware, and two OTA partitions do not fit comfortably in 2 MB. On a board with
 **WARNING: The eFuses are permanent and you cannot remove them.** Step 5 prevents
 all subsequent use of the USB interface to write the firmware.
 
-## Repo layout
+## 📁 Repo layout
 
 | Path | What it is |
 |---|---|
@@ -238,7 +246,7 @@ all subsequent use of the USB interface to write the firmware.
 | `vps/` | Server provisioning, client enrolment, MTU and MSS fixes |
 | `scripts/` | Build, flash and monitor without interaction, agent-friendly |
 
-## License
+## 📜 License
 
 MIT (`LICENSE`). `components/wireguard/` is vendored third-party code and keeps
 its own BSD-3 license; the two local patches are documented in
