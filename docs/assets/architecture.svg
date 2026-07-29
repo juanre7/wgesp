@@ -1,0 +1,60 @@
+<svg width="960" height="300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 300">
+    <defs>
+        <style>
+            .box { fill: #ffffff; stroke: #e2e8f0; stroke-width: 2px; rx: 8px; ry: 8px; }
+            .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 16px; font-weight: 600; fill: #1e293b; text-anchor: middle; }
+            .subtitle { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; fill: #64748b; text-anchor: middle; }
+            .arrow-wg { stroke: #ef4444; stroke-width: 3px; fill: none; stroke-dasharray: 6 4; marker-end: url(#arrow-wg-head); }
+            .arrow-lan { stroke: #10b981; stroke-width: 3px; fill: none; marker-end: url(#arrow-lan-head); }
+            .label-wg { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; font-weight: 600; fill: #ef4444; text-anchor: middle; }
+            .label-lan { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; font-weight: 600; fill: #10b981; text-anchor: middle; }
+        </style>
+
+        <marker id="arrow-wg-head" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444" />
+        </marker>
+        <marker id="arrow-lan-head" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#10b981" />
+        </marker>
+        <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.08"/>
+        </filter>
+    </defs>
+
+    <rect width="100%" height="100%" fill="#f8fafc" rx="12" ry="12" />
+
+    <!-- Devices -->
+    <rect x="40" y="90" width="160" height="90" class="box" filter="url(#shadow)" />
+    <text x="120" y="130" class="title">📱 Laptop / Phone</text>
+    <text x="120" y="155" class="subtitle">10.66.66.10+</text>
+
+    <!-- VPS -->
+    <rect x="290" y="90" width="160" height="90" class="box" filter="url(#shadow)" />
+    <text x="370" y="130" class="title">☁️ VPS</text>
+    <text x="370" y="155" class="subtitle">10.66.66.1</text>
+
+    <!-- ESP32-C6 -->
+    <rect x="540" y="80" width="160" height="110" class="box" filter="url(#shadow)" />
+    <text x="620" y="120" class="title">🔌 ESP32-C6</text>
+    <text x="620" y="145" class="subtitle">10.66.66.6</text>
+    <text x="620" y="165" class="subtitle">192.168.1.50</text>
+
+    <!-- Home LAN -->
+    <rect x="790" y="90" width="140" height="90" class="box" filter="url(#shadow)" />
+    <text x="860" y="130" class="title">🏠 Home LAN</text>
+    <text x="860" y="155" class="subtitle">192.168.1.0/24</text>
+
+    <!-- Connections -->
+    <path d="M 200 135 L 275 135" class="arrow-wg" />
+    <text x="245" y="125" class="label-wg">WireGuard</text>
+
+    <path d="M 450 135 L 525 135" class="arrow-wg" />
+    <text x="495" y="125" class="label-wg">WireGuard</text>
+
+    <path d="M 700 135 L 775 135" class="arrow-lan" />
+    <text x="745" y="125" class="label-lan">WiFi / LAN</text>
+
+    <text x="480" y="240" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size:15px; font-weight:500; fill:#475569; text-anchor: middle;">
+        The ESP always initiates the connection to the VPS. No port forwarding needed on the router.
+    </text>
+</svg>

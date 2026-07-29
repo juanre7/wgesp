@@ -13,11 +13,9 @@ WireGuard tunnel to a VPS. From anywhere you connect to the VPS and reach your
 home network; if you want, you can also browse the internet with your home public
 IP address. **No port forwarding on the router, ever.**
 
-```
-phone / laptop ──► VPS (vpn.example.com) ──► ESP32-C6 ──► home network
-  10.66.66.10+          10.66.66.1            10.66.66.6    192.168.1.0/24
-                                            (WiFi 192.168.1.50)
-```
+<div align="center">
+  <img src="docs/assets/architecture.svg" alt="wgesp architecture diagram" width="800">
+</div>
 
 The ESP always initiates the connection and keeps it alive with a 25 s keepalive,
 so the home router needs no configuration at all. That is the whole point: it
