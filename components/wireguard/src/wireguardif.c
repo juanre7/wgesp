@@ -282,9 +282,7 @@ static void wireguardif_process_data_message(struct wireguard_device *device, st
 	size_t src_len;
 	struct pbuf *pbuf;
 	struct ip_hdr *iphdr;
-	ip_addr_t dest;
 	bool dest_ok = false;
-	int x;
 	uint32_t now;
 	uint16_t header_len = 0xFFFF;
 	uint32_t idx = data_hdr->receiver;
@@ -339,6 +337,8 @@ static void wireguardif_process_data_message(struct wireguard_device *device, st
 							// Also check packet length!
 #if LWIP_IPV4
 							if (IPH_V(iphdr) == 4) {
+								ip_addr_t dest;
+								int x;
 								wgesp_client_seen(iphdr->src.addr);
 								ip_addr_copy_from_ip4(dest, iphdr->dest);
 								for (x=0; x < WIREGUARD_MAX_SRC_IPS; x++) {
@@ -426,7 +426,6 @@ static struct pbuf *wireguardif_initiate_handshake(struct wireguard_device *devi
 static void wireguardif_send_handshake_response(struct wireguard_device *device, struct wireguard_peer *peer) {
 	struct message_handshake_response packet;
 	struct pbuf *pbuf = NULL;
-	err_t err = ERR_OK;
 
 	if (wireguard_create_handshake_response(device, peer, &packet)) {
 
@@ -435,8 +434,7 @@ static void wireguardif_send_handshake_response(struct wireguard_device *device,
 		ESP_LOGD(TAG, "sending handshake response packet");
 		pbuf = pbuf_alloc(PBUF_TRANSPORT, sizeof(struct message_handshake_response), PBUF_RAM);
 		if (pbuf) {
-			err = pbuf_take(pbuf, &packet, sizeof(struct message_handshake_response));
-			if (err == ERR_OK) {
+			if (pbuf_take(pbuf, &packet, sizeof(struct message_handshake_response)) == ERR_OK) {
 				// OK!
 				wireguardif_peer_output(device->netif, pbuf, peer);
 			}
@@ -477,7 +475,6 @@ static size_t get_source_addr_port(const ip_addr_t *addr, u16_t port, uint8_t *b
 static void wireguardif_send_handshake_cookie(struct wireguard_device *device, const uint8_t *mac1, uint32_t index, const ip_addr_t *addr, u16_t port) {
 	struct message_cookie_reply packet;
 	struct pbuf *pbuf = NULL;
-	err_t err = ERR_OK;
 	uint8_t source_buf[18];
 	size_t source_len = get_source_addr_port(addr, port, source_buf, sizeof(source_buf));
 
@@ -486,8 +483,7 @@ static void wireguardif_send_handshake_cookie(struct wireguard_device *device, c
 	// Send this packet out!
 	pbuf = pbuf_alloc(PBUF_TRANSPORT, sizeof(struct message_cookie_reply), PBUF_RAM);
 	if (pbuf) {
-		err = pbuf_take(pbuf, &packet, sizeof(struct message_cookie_reply));
-		if (err == ERR_OK) {
+		if (pbuf_take(pbuf, &packet, sizeof(struct message_cookie_reply)) == ERR_OK) {
 			wireguardif_device_output(device, pbuf, addr, port);
 		}
 		pbuf_free(pbuf);
@@ -1096,20 +1092,6 @@ err_t wireguardif_init(struct netif *netif) {
 	}
 fail:
 	return result;
-}
-
-void wireguardif_peer_init(struct wireguardif_peer *peer) {
-	LWIP_ASSERT("peer != NULL", (peer != NULL));
-	memset(peer, 0, sizeof(struct wireguardif_peer));
-	// Caller must provide 'public_key'
-	peer->public_key = NULL;
-	ip_addr_set_any(false, &peer->endpoint_ip);
-	peer->endport_port = WIREGUARDIF_DEFAULT_PORT;
-	peer->keep_alive = 0;
-	ip_addr_set_any(false, &peer->allowed_ip);
-	ip_addr_set_any(false, &peer->allowed_mask);
-	memset(peer->greatest_timestamp, 0, sizeof(peer->greatest_timestamp));
-	peer->preshared_key = NULL;
 }
 
 void wireguardif_shutdown(struct netif *netif) {

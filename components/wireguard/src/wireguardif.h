@@ -91,8 +91,7 @@ struct wireguardif_peer {
  *
  * netif_set_up(wg_net);
  *
- * struct wireguardif_peer peer;
- * wireguardif_peer_init(&peer);
+ * struct wireguardif_peer peer = {0};
  * peer.public_key = "apoehc...4322abcdfejg=;
  * peer.preshared_key = NULL;
  * peer.allowed_ip = allowed_ip;
@@ -114,9 +113,6 @@ struct wireguardif_peer {
 
 // Initialise a new WireGuard network interface (netif)
 err_t wireguardif_init(struct netif *netif);
-
-// Helper to initialise the peer struct with defaults
-void wireguardif_peer_init(struct wireguardif_peer *peer);
 
 // Add a new peer to the specified interface - see wireguard.h for maximum number of peers allowed
 // On success the peer_index can be used to reference this peer in future function calls
