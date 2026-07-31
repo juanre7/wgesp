@@ -93,11 +93,6 @@ typedef struct {
  *
  * Do not call this function multiple times.
  *
- * To connect to other peer, use `esp_wireguard_disconnect()`, and
- * `esp_wireguard_init()` with a new configuration. To reconnect to
- * the same peer just use `esp_wireguard_disconnect()` and then
- * `esp_wireguard_connect()`.
- *
  * @param       config WireGuard configuration.
  * @param[out]  ctx Context of WireGuard.
  *
@@ -164,15 +159,6 @@ esp_err_t esp_wireguard_latest_handshake(const wireguard_ctx_t *ctx, time_t *res
  *      - ESP_ERR_INVALID_STATE if data inside ctx is not valid
  */
 esp_err_t esp_wireguard_add_allowed_ip(const wireguard_ctx_t *ctx, const char *allowed_ip, const char *allowed_ip_mask);
-
-/**
- * @brief Disconnect from the peer
- *
- * @param ctx Context of WireGuard.
- * @return
- *      - ESP_OK on success.
- */
-esp_err_t esp_wireguard_disconnect(wireguard_ctx_t *ctx);
 
 #ifdef __cplusplus
 }
