@@ -311,6 +311,7 @@ fail:
     return err;
 }
 
+// cppcheck-suppress unusedFunction
 esp_err_t esp_wireguard_set_default(const wireguard_ctx_t *ctx)
 {
     esp_err_t err;
@@ -328,6 +329,7 @@ fail:
     return err;
 }
 
+// cppcheck-suppress unusedFunction
 esp_err_t esp_wireguard_restore_default(const wireguard_ctx_t *ctx)
 {
     esp_err_t err;
