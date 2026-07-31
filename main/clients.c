@@ -75,7 +75,8 @@ int main(void)
     assert(clients_seen(0x0a42420a, 0));          /* new client */
     assert(!clients_seen(0x0a42420a, 5 * S));     /* same one: does not count again */
     assert(clients_expire(30 * S) == 0);          /* still alive */
-    assert(clients_expire(80 * S) == 1);          /* quiet for too long: gone */
+    assert(clients_expire(5 * S + CLIENTS_IDLE_US) == 0); /* exact boundary: still alive */
+    assert(clients_expire(5 * S + CLIENTS_IDLE_US + 1) == 1); /* just over boundary: gone */
     assert(clients_seen(0x0a42420a, 80 * S));     /* and on coming back it counts again */
 
     for (uint32_t i = 1; i < CLIENTS_MAX; i++) {
