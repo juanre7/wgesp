@@ -1094,20 +1094,6 @@ fail:
 	return result;
 }
 
-void wireguardif_peer_init(struct wireguardif_peer *peer) {
-	LWIP_ASSERT("peer != NULL", (peer != NULL));
-	memset(peer, 0, sizeof(struct wireguardif_peer));
-	// Caller must provide 'public_key'
-	peer->public_key = NULL;
-	ip_addr_set_any(false, &peer->endpoint_ip);
-	peer->endport_port = WIREGUARDIF_DEFAULT_PORT;
-	peer->keep_alive = 0;
-	ip_addr_set_any(false, &peer->allowed_ip);
-	ip_addr_set_any(false, &peer->allowed_mask);
-	memset(peer->greatest_timestamp, 0, sizeof(peer->greatest_timestamp));
-	peer->preshared_key = NULL;
-}
-
 void wireguardif_shutdown(struct netif *netif) {
 	LWIP_ASSERT("netif != NULL", (netif != NULL));
 	LWIP_ASSERT("state != NULL", (netif->state != NULL));
