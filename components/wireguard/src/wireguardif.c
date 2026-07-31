@@ -282,9 +282,7 @@ static void wireguardif_process_data_message(struct wireguard_device *device, st
 	size_t src_len;
 	struct pbuf *pbuf;
 	struct ip_hdr *iphdr;
-	ip_addr_t dest;
 	bool dest_ok = false;
-	int x;
 	uint32_t now;
 	uint16_t header_len = 0xFFFF;
 	uint32_t idx = data_hdr->receiver;
@@ -339,6 +337,8 @@ static void wireguardif_process_data_message(struct wireguard_device *device, st
 							// Also check packet length!
 #if LWIP_IPV4
 							if (IPH_V(iphdr) == 4) {
+								ip_addr_t dest;
+								int x;
 								wgesp_client_seen(iphdr->src.addr);
 								ip_addr_copy_from_ip4(dest, iphdr->dest);
 								for (x=0; x < WIREGUARD_MAX_SRC_IPS; x++) {
