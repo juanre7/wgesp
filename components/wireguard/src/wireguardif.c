@@ -426,7 +426,6 @@ static struct pbuf *wireguardif_initiate_handshake(struct wireguard_device *devi
 static void wireguardif_send_handshake_response(struct wireguard_device *device, struct wireguard_peer *peer) {
 	struct message_handshake_response packet;
 	struct pbuf *pbuf = NULL;
-	err_t err = ERR_OK;
 
 	if (wireguard_create_handshake_response(device, peer, &packet)) {
 
@@ -435,8 +434,7 @@ static void wireguardif_send_handshake_response(struct wireguard_device *device,
 		ESP_LOGD(TAG, "sending handshake response packet");
 		pbuf = pbuf_alloc(PBUF_TRANSPORT, sizeof(struct message_handshake_response), PBUF_RAM);
 		if (pbuf) {
-			err = pbuf_take(pbuf, &packet, sizeof(struct message_handshake_response));
-			if (err == ERR_OK) {
+			if (pbuf_take(pbuf, &packet, sizeof(struct message_handshake_response)) == ERR_OK) {
 				// OK!
 				wireguardif_peer_output(device->netif, pbuf, peer);
 			}
@@ -477,7 +475,6 @@ static size_t get_source_addr_port(const ip_addr_t *addr, u16_t port, uint8_t *b
 static void wireguardif_send_handshake_cookie(struct wireguard_device *device, const uint8_t *mac1, uint32_t index, const ip_addr_t *addr, u16_t port) {
 	struct message_cookie_reply packet;
 	struct pbuf *pbuf = NULL;
-	err_t err = ERR_OK;
 	uint8_t source_buf[18];
 	size_t source_len = get_source_addr_port(addr, port, source_buf, sizeof(source_buf));
 
@@ -486,8 +483,7 @@ static void wireguardif_send_handshake_cookie(struct wireguard_device *device, c
 	// Send this packet out!
 	pbuf = pbuf_alloc(PBUF_TRANSPORT, sizeof(struct message_cookie_reply), PBUF_RAM);
 	if (pbuf) {
-		err = pbuf_take(pbuf, &packet, sizeof(struct message_cookie_reply));
-		if (err == ERR_OK) {
+		if (pbuf_take(pbuf, &packet, sizeof(struct message_cookie_reply)) == ERR_OK) {
 			wireguardif_device_output(device, pbuf, addr, port);
 		}
 		pbuf_free(pbuf);
