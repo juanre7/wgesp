@@ -284,7 +284,6 @@ static void wireguardif_process_data_message(struct wireguard_device *device, st
 	struct ip_hdr *iphdr;
 	ip_addr_t dest;
 	bool dest_ok = false;
-	int x;
 	uint32_t now;
 	uint16_t header_len = 0xFFFF;
 	uint32_t idx = data_hdr->receiver;
@@ -341,7 +340,7 @@ static void wireguardif_process_data_message(struct wireguard_device *device, st
 							if (IPH_V(iphdr) == 4) {
 								wgesp_client_seen(iphdr->src.addr);
 								ip_addr_copy_from_ip4(dest, iphdr->dest);
-								for (x=0; x < WIREGUARD_MAX_SRC_IPS; x++) {
+								for (int x=0; x < WIREGUARD_MAX_SRC_IPS; x++) {
 									if (peer->allowed_source_ips[x].valid) {
 										if (ip_addr_netcmp(&dest, &peer->allowed_source_ips[x].ip, ip_2_ip4(&peer->allowed_source_ips[x].mask))) {
 											dest_ok = true;
