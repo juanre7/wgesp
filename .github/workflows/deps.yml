@@ -1,0 +1,22 @@
+name: deps
+
+# Vigila que las dependencias del ESP Component Registry no se queden atras.
+# El badge del README lo da la ultima ejecucion en main, de ahi el cron: si
+# sale una version nueva que el rango ya no cubre, el badge se pone rojo solo.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  push:
+    branches: [main]
+    paths: ["**/idf_component.yml", "scripts/check_deps.py", ".github/workflows/deps.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  registro:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/check_deps.py .
