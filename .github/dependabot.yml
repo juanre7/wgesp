@@ -1,0 +1,9 @@
+version: 2
+
+# Dependabot no entiende idf_component.yml (de eso se encarga
+# .github/workflows/deps.yml), pero si las actions de los workflows.
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly

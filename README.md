@@ -2,9 +2,13 @@
 
 # wgesp: The smallest ESP32 Wireguard server
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-![ESP-IDF](https://img.shields.io/badge/ESP--IDF-5.5-red.svg)
-![Architecture](https://img.shields.io/badge/Architecture-ESP32--C6-green.svg)
+[![Flasher](https://github.com/juanre7/wgesp/actions/workflows/pages.yml/badge.svg)](https://juanre7.github.io/wgesp/)
+[![Dependencies](https://github.com/juanre7/wgesp/actions/workflows/deps.yml/badge.svg)](https://github.com/juanre7/wgesp/actions/workflows/deps.yml)
+
+![Architecture](https://img.shields.io/badge/Architecture-ESP32--C6-1F6FEB.svg)
+![ESP-IDF](https://img.shields.io/badge/ESP--IDF-5.5-E7352C.svg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-1F6FEB.svg)](https://opensource.org/licenses/MIT)
+[![Help Wanted](https://img.shields.io/github/issues/juanre7/wgesp/help%20wanted?color=2EA043&label=help%20wanted)](https://github.com/juanre7/wgesp/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
 </div>
 
