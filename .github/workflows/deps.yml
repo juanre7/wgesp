@@ -1,8 +1,10 @@
 name: deps
 
 # Vigila que las dependencias del ESP Component Registry no se queden atras.
-# El badge del README lo da la ultima ejecucion en main, de ahi el cron: si
-# sale una version nueva que el rango ya no cubre, el badge se pone rojo solo.
+# El badge del README no es el de Actions sino .github/deps.json, que este
+# workflow reescribe y commitea: asi ensena el recuento ("2 up to date") en
+# vez de un passing/failing. De ahi el cron: si sale una version nueva que el
+# rango ya no cubre, el badge cambia solo.
 on:
   schedule:
     - cron: "0 6 * * 1"
@@ -12,11 +14,28 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   registro:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - run: python3 scripts/check_deps.py .
+
+      - id: check
+        continue-on-error: true
+        run: python3 scripts/check_deps.py . --badge .github/deps.json
+
+      # el recuento se publica igual cuando algo esta atrasado: es su trabajo
+      - name: Publicar el recuento
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git diff --quiet .github/deps.json && exit 0
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(deps): actualizar el recuento del badge" .github/deps.json
+          git push
+
+      - name: Resultado
+        if: steps.check.outcome == 'failure'
+        run: exit 1

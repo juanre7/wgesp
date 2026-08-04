@@ -5,6 +5,8 @@ name: flasher
 on:
   push:
     branches: [main]
+    # el bot del recuento de dependencias no tiene por que recompilar el firmware
+    paths-ignore: [".github/deps.json"]
   workflow_dispatch:
 
 permissions:

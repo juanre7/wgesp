@@ -7,7 +7,7 @@ leemos cada idf_component.yml, preguntamos por la ultima version publicada y
 fallamos si el rango declarado ya no la cubre (una mayor nueva, o una menor
 nueva cuando la mayor es 0).
 
-Uso: python3 scripts/check_deps.py [raiz-del-repo]
+Uso: python3 scripts/check_deps.py [raiz-del-repo] [--badge fichero.json]
 """
 
 import json
@@ -75,24 +75,45 @@ def cubre(rango, version):
     return minimo <= version < tope
 
 
-def main(raiz):
-    fallo = 0
+def badge(total, atrasadas):
+    """JSON para el badge 'endpoint' de shields, con el recuento a la vista."""
+    if atrasadas:
+        mensaje, color = f"{atrasadas} of {total} outdated", "orange"
+    else:
+        mensaje, color = f"{total} up to date", "brightgreen"
+    return json.dumps(
+        {"schemaVersion": 1, "label": "deps", "message": mensaje, "color": color},
+        indent=2,
+    ) + "\n"
+
+
+def main(raiz, destino_badge=None):
+    total = atrasadas = 0
     for manifiesto in sorted(pathlib.Path(raiz).glob("**/idf_component.yml")):
         for nombre, rango in dependencias(manifiesto):
             version = ultima(nombre)
             v = ".".join(str(n) for n in version)
             donde = manifiesto.relative_to(raiz)
             estado = cubre(rango, version)
+            total += 1
             if estado is None:
                 print(f"?  {nombre} {rango} ({donde}): rango no reconocido, ultima {v}")
-                fallo = 1
+                atrasadas += 1
             elif estado:
                 print(f"OK {nombre} {rango} ({donde}): ultima {v}")
             else:
                 print(f"::warning file={donde}::{nombre} {rango} se ha quedado atras: ya hay {v}")
-                fallo = 1
-    return fallo
+                atrasadas += 1
+    if destino_badge:
+        pathlib.Path(destino_badge).write_text(badge(total, atrasadas))
+    return 1 if atrasadas else 0
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1] if len(sys.argv) > 1 else "."))
+    args = sys.argv[1:]
+    destino = None
+    if "--badge" in args:
+        i = args.index("--badge")
+        destino = args[i + 1]
+        del args[i : i + 2]
+    sys.exit(main(args[0] if args else ".", destino))
