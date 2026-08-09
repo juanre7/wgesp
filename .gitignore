@@ -6,6 +6,16 @@ dependencies.lock
 *.log
 .vscode/
 __pycache__/
+.pytest_cache/
+
+# cobertura de los selftests en el PC
+*.o
+*.gcda
+*.gcno
+*.gcov
+*_selftest
+coverage*.xml
+.coverage
 
 # private keys: never in the repo
 *.key

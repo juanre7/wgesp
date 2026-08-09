@@ -109,11 +109,16 @@ def main(raiz, destino_badge=None):
     return 1 if atrasadas else 0
 
 
-if __name__ == "__main__":
-    args = sys.argv[1:]
+def cli(args):
+    """argparse para dos argumentos seria mas codigo que esto."""
+    args = list(args)
     destino = None
     if "--badge" in args:
         i = args.index("--badge")
         destino = args[i + 1]
         del args[i : i + 2]
-    sys.exit(main(args[0] if args else ".", destino))
+    return main(args[0] if args else ".", destino)
+
+
+if __name__ == "__main__":
+    sys.exit(cli(sys.argv[1:]))  # pragma: no cover

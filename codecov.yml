@@ -1,0 +1,12 @@
+# Informativa, no una puerta: solo se sube la parte del firmware que corre en
+# el PC, asi que un porcentaje que baja no tiene por que tumbar un PR.
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+
+comment: false

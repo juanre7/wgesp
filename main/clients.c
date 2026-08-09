@@ -65,6 +65,7 @@ int clients_list(uint32_t *ips, int64_t *last_us, int max)
     return n;
 }
 
+/* GCOVR_EXCL_START --- el propio test no cuenta como codigo cubierto */
 #ifdef CLIENTS_SELFTEST
 #include <assert.h>
 
@@ -95,3 +96,4 @@ int main(void)
     return 0;
 }
 #endif
+/* GCOVR_EXCL_STOP */

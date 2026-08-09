@@ -3,6 +3,8 @@
 # wgesp: The smallest ESP32 Wireguard server
 
 [![Flasher](https://github.com/juanre7/wgesp/actions/workflows/pages.yml/badge.svg)](https://juanre7.github.io/wgesp/)
+[![tests](https://github.com/juanre7/wgesp/actions/workflows/tests.yml/badge.svg)](https://github.com/juanre7/wgesp/actions/workflows/tests.yml)
+[![codecov](https://codecov.io/gh/juanre7/wgesp/branch/main/graph/badge.svg)](https://codecov.io/gh/juanre7/wgesp)
 [![deps](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjuanre7%2Fwgesp%2Fmain%2F.github%2Fdeps.json)](https://github.com/juanre7/wgesp/actions/workflows/deps.yml)
 [![Help Wanted](https://img.shields.io/github/issues/juanre7/wgesp/help%20wanted?color=2EA043&label=help%20wanted)](https://github.com/juanre7/wgesp/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 ![Architecture](https://img.shields.io/badge/Architecture-ESP32--C6-1F6FEB.svg)
@@ -242,10 +244,29 @@ all subsequent use of the USB interface to write the firmware.
 |---|---|
 | `main/` | The application: WiFi, SNTP, tunnel, NAPT and the safety reboot |
 | `main/status.c` | The status page, the CPU meter and the `/dump` bench |
+| `main/fmt.c`, `main/clients.c` | Pure logic, no ESP-IDF: they carry their own selftest |
 | `main/crypto_bench.c` | On-chip cipher bench (`CONFIG_WGESP_CRYPTO_BENCH`) |
 | `components/wireguard/` | droscy/esp_wireguard, vendored (see `ORIGIN.md`) |
 | `vps/` | Server provisioning, client enrolment, MTU and MSS fixes |
 | `scripts/` | Build, flash and monitor without interaction, agent-friendly |
+
+## 🧪 Tests
+
+Most of this needs the board plugged in, so what gets tested is the part that
+does not: the pure logic of the firmware and the dependency script. Both run on
+the PC in under a second, and CI sends the coverage to the badge above.
+
+```bash
+gcc -DCLIENTS_SELFTEST -Imain main/clients.c -o /tmp/t && /tmp/t
+gcc -DFMT_SELFTEST     -Imain main/fmt.c     -o /tmp/t && /tmp/t
+python3 -m pytest scripts/
+```
+
+The selftest lives inside the file it tests, at the bottom, behind an `#ifdef`:
+it costs no flash and it is right there when you change the function. The
+coverage percentage only counts these files. Anything that talks to the HTTP
+server, the sensors, the watchdog or the tunnel itself is not in it and cannot
+be: it is verified with the board.
 
 ## 📜 License
 

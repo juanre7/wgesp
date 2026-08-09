@@ -1,0 +1,71 @@
+name: tests
+
+# Lo que se puede probar sin placa se prueba aqui: la logica pura del firmware
+# (clients.c, fmt.c, cada uno con su selftest dentro) y el script de
+# dependencias. Lo que necesita ESP-IDF --- servidor HTTP, sensores, watchdog,
+# el propio tunel --- no entra, ni en los tests ni en el porcentaje.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Instalar gcovr
+        run: pipx install gcovr
+
+      # -Wall -Wextra -Werror: si el selftest no compila limpio, no pasa
+      - name: Selftests con cobertura
+        run: |
+          for src in clients fmt; do
+            upper=$(echo "$src" | tr a-z A-Z)
+            gcc -Wall -Wextra -Werror --coverage -D${upper}_SELFTEST \
+                -Imain -c main/$src.c -o $src.o
+            gcc --coverage $src.o -o ${src}_selftest
+            ./${src}_selftest
+          done
+
+      # gcovr respeta los GCOVR_EXCL_* del fuente, asi que los propios tests no
+      # se cuentan como codigo cubierto
+      - name: Informe de cobertura
+        run: gcovr --root . --cobertura coverage-c.xml --print-summary
+
+      # fail_ci_if_error: false --- si Codecov esta caido no tumba un test que
+      # ha pasado. La cobertura informa, no bloquea.
+      - uses: codecov/codecov-action@v5
+        with:
+          files: coverage-c.xml
+          flags: firmware
+          slug: juanre7/wgesp
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install pytest pytest-cov
+
+      # sin red: el urlopen del registro se sustituye en los propios tests
+      - name: Tests de scripts/ con cobertura
+        run: |
+          python3 -m pytest scripts/ -q \
+            --cov=check_deps --cov-report=xml:coverage-python.xml
+
+      - uses: codecov/codecov-action@v5
+        with:
+          files: coverage-python.xml
+          flags: scripts
+          slug: juanre7/wgesp
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
