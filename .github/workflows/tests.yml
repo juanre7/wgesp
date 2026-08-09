@@ -1,0 +1,40 @@
+name: tests
+
+# El firmware casi entero necesita la placa, pero la logica pura (clients.c)
+# compila y corre en el PC. Eso es lo que se prueba aqui y lo que se manda a
+# Codecov: la cobertura del codigo que se puede probar sin ESP32.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Instalar gcovr
+        run: pipx install gcovr
+
+      - name: Selftest de clients.c con cobertura
+        run: |
+          gcc --coverage -DCLIENTS_SELFTEST -Imain -c main/clients.c -o clients.o
+          gcc --coverage clients.o -o clients_selftest
+          ./clients_selftest
+
+      # cobertura en cobertura-xml; gcovr respeta los GCOVR_EXCL_* del fuente,
+      # asi que el propio selftest no se cuenta como codigo cubierto
+      - name: Informe de cobertura
+        run: gcovr --root . --cobertura coverage.xml --print-summary
+
+      # fail_ci_if_error: false --- si Codecov esta caido no tumba un test que
+      # ha pasado. La cobertura informa, no bloquea.
+      - name: Subir cobertura a Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.xml
+          slug: juanre7/wgesp
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false

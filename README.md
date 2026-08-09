@@ -3,6 +3,8 @@
 # wgesp: The smallest ESP32 Wireguard server
 
 [![Flasher](https://github.com/juanre7/wgesp/actions/workflows/pages.yml/badge.svg)](https://juanre7.github.io/wgesp/)
+[![tests](https://github.com/juanre7/wgesp/actions/workflows/tests.yml/badge.svg)](https://github.com/juanre7/wgesp/actions/workflows/tests.yml)
+[![codecov](https://codecov.io/gh/juanre7/wgesp/branch/main/graph/badge.svg)](https://codecov.io/gh/juanre7/wgesp)
 [![deps](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjuanre7%2Fwgesp%2Fmain%2F.github%2Fdeps.json)](https://github.com/juanre7/wgesp/actions/workflows/deps.yml)
 [![Help Wanted](https://img.shields.io/github/issues/juanre7/wgesp/help%20wanted?color=2EA043&label=help%20wanted)](https://github.com/juanre7/wgesp/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 ![Architecture](https://img.shields.io/badge/Architecture-ESP32--C6-1F6FEB.svg)
