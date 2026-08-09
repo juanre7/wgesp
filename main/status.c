@@ -13,6 +13,7 @@
 #include <time.h>
 
 #include "clients.h"
+#include "fmt.h"
 #include "driver/temperature_sensor.h"
 #include "esp_freertos_hooks.h"
 #include "esp_http_server.h"
@@ -72,10 +73,7 @@ void status_sample(void)
     int64_t now = esp_timer_get_time();
     if (last_us) {
         uint32_t rate = (uint32_t)((v - last_loops) * 1000000LL / (now - last_us));
-        if (rate > idle_max_rate) {
-            idle_max_rate = rate;
-        }
-        cpu_pct = idle_max_rate ? (int)(100 - (rate * 100 / idle_max_rate)) : -1;
+        cpu_pct = cpu_pct_from_rate(rate, &idle_max_rate);
     }
     last_loops = v;
     last_us = now;
@@ -97,13 +95,6 @@ float status_temp_c(void)
 
 /* ---- the page ---------------------------------------------------------- */
 
-/* buf of 16 bytes; ip in host order */
-static void fmt_ip(char *buf, uint32_t ip)
-{
-    snprintf(buf, 16, "%u.%u.%u.%u", (unsigned)(ip >> 24), (unsigned)((ip >> 16) & 0xff),
-             (unsigned)((ip >> 8) & 0xff), (unsigned)(ip & 0xff));
-}
-
 static const char *reset_reason(void)
 {
     switch (esp_reset_reason()) {
@@ -117,45 +108,6 @@ static const char *reset_reason(void)
     case ESP_RST_DEEPSLEEP:return "deep sleep";
     default:               return "unknown";
     }
-}
-
-/* Looks up a client name by its last octet in the CONFIG_WGESP_CLIENT_NAMES
- * list ("10=phone,11=laptop"). Returns NULL if not there.
- * ponytail: the string is walked on every render instead of parsed at boot.
- * It is four clients and one page every 15 s; a table in RAM plus its parser
- * would be more code than this and would save nothing measurable. */
-static const char *client_name(char *buf, size_t len, uint32_t ip)
-{
-    const char *list = CONFIG_WGESP_CLIENT_NAMES;
-    char key[8];
-    int n = snprintf(key, sizeof(key), "%u=", (unsigned)(ip & 0xff));
-
-    for (const char *p = list; *p; ) {
-        if (strncmp(p, key, n) == 0 && (p == list || p[-1] == ',')) {
-            p += n;
-            size_t i = 0;
-            while (p[i] && p[i] != ',' && i < len - 1) {
-                buf[i] = p[i];
-                i++;
-            }
-            buf[i] = 0;
-            return i ? buf : NULL;
-        }
-        p = strchr(p, ',');
-        if (!p) break;
-        p++;
-    }
-    return NULL;
-}
-
-/* A duration in seconds, readable: "3 d 4 h", "12 min". buf of 24. */
-static void fmt_time(char *buf, long long s)
-{
-    if (s < 0)          snprintf(buf, 24, "never");
-    else if (s < 120)   snprintf(buf, 24, "%lld s", s);
-    else if (s < 7200)  snprintf(buf, 24, "%lld min", s / 60);
-    else if (s < 172800)snprintf(buf, 24, "%lld h %lld min", s / 3600, (s % 3600) / 60);
-    else                snprintf(buf, 24, "%lld d %lld h", s / 86400, (s % 86400) / 3600);
 }
 
 /* The real page. One-piece HTML with nothing to download: no fonts, no CSS, no
@@ -185,7 +137,7 @@ static esp_err_t page_html(httpd_req_t *req)
     size_t heap_total = heap_caps_get_total_size(MALLOC_CAP_DEFAULT);
     int heap_pct = heap_total ? (int)((uint64_t)heap * 100 / heap_total) : -1;
 
-    char t_up[24], t_hs[24];
+    char t_up[FMT_TIME_LEN], t_hs[FMT_TIME_LEN];
     fmt_time(t_up, now_us / 1000000);
     fmt_time(t_hs, hs ? (long long)(now - hs) : -1);
 
@@ -261,10 +213,11 @@ static esp_err_t page_html(httpd_req_t *req)
         n += snprintf(buf + n, sizeof(buf) - n, "<li>Nobody is talking through the tunnel</li>");
     }
     for (int i = 0; i < c && n < (int)sizeof(buf) - 120; i++) {
-        char ip[16], seen[24], name[24];
+        char ip[FMT_IP_LEN], seen[FMT_TIME_LEN], name[24];
         fmt_ip(ip, ntohl(ips[i]));
         fmt_time(seen, (now_us - last[i]) / 1000000);
-        const char *who = client_name(name, sizeof(name), ntohl(ips[i]));
+        const char *who = client_name(name, sizeof(name), CONFIG_WGESP_CLIENT_NAMES,
+                                      ntohl(ips[i]));
         if (who) {
             n += snprintf(buf + n, sizeof(buf) - n,
                           "<li><b>%s</b> <span>%s</span><span>%s ago</span></li>",
@@ -332,7 +285,7 @@ static esp_err_t page(httpd_req_t *req)
     int c = clients_list(ips, last, CLIENTS_MAX);
     n += snprintf(buf + n, sizeof(buf) - n, "clients %d\n", c);
     for (int i = 0; i < c && n < (int)sizeof(buf); i++) {
-        char ip[16];
+        char ip[FMT_IP_LEN];
         fmt_ip(ip, ntohl(ips[i]));
         n += snprintf(buf + n, sizeof(buf) - n, "  %s, quiet for %lld s\n", ip,
                       (long long)((now_us - last[i]) / 1000000));
@@ -443,8 +396,7 @@ static bool from_the_lan(uint32_t ip)
     if (!sta || esp_netif_get_ip_info(sta, &info) != ESP_OK) {
         return false;
     }
-    uint32_t mask = ntohl(info.netmask.addr);
-    return (ip & mask) == (ntohl(info.ip.addr) & mask);
+    return ip_in_net(ip, ntohl(info.ip.addr), ntohl(info.netmask.addr));
 #endif
 }
 
@@ -462,10 +414,10 @@ static esp_err_t only_from_the_tunnel(httpd_handle_t hd, int sockfd)
     uint32_t ip = (addr.sin6_family == AF_INET6)
                       ? ntohl(((uint32_t *)&addr.sin6_addr)[3]) /* ::ffff:a.b.c.d */
                       : ntohl(((struct sockaddr_in *)&addr)->sin_addr.s_addr);
-    uint32_t mask = ntohl(ipaddr_addr(CONFIG_WGESP_ALLOWED_IP_MASK));
-    if ((ip & mask) != (ntohl(ipaddr_addr(CONFIG_WGESP_ALLOWED_IP)) & mask) &&
+    if (!ip_in_net(ip, ntohl(ipaddr_addr(CONFIG_WGESP_ALLOWED_IP)),
+                   ntohl(ipaddr_addr(CONFIG_WGESP_ALLOWED_IP_MASK))) &&
         !from_the_lan(ip)) {
-        char s[16];
+        char s[FMT_IP_LEN];
         fmt_ip(s, ip);
         ESP_LOGW(TAG, "connection refused from %s: neither tunnel nor LAN", s);
         return ESP_FAIL;
