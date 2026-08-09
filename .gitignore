@@ -15,6 +15,7 @@ __pycache__/
 *.gcov
 *_selftest
 coverage*.xml
+.coverage
 
 # private keys: never in the repo
 *.key
