@@ -37,7 +37,7 @@ jobs:
 
       # fail_ci_if_error: false --- si Codecov esta caido no tumba un test que
       # ha pasado. La cobertura informa, no bloquea.
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v7
         with:
           files: coverage-c.xml
           flags: firmware
@@ -62,7 +62,7 @@ jobs:
           python3 -m pytest scripts/ -q \
             --cov=check_deps --cov-report=xml:coverage-python.xml
 
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v7
         with:
           files: coverage-python.xml
           flags: scripts
